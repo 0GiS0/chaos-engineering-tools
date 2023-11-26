@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: tour-of-heroes-api
+  name: tour-of-heroes-api
+  # annotations:
+    # sidecar.jaegertracing.io/inject: "simplest"
+spec:
+  replicas: 2
+  revisionHistoryLimit: 1
+  selector:
+    matchLabels:
+      app: tour-of-heroes-api
+  template:
+    metadata:
+      labels:
+        app: tour-of-heroes-api
+    spec:
+      containers:
+        - env:
+            # - name: OTLP_ENDPOINT_URL
+            #   value: http://simplest-collector.observability.svc:4317
+            - name: ConnectionStrings__DefaultConnection
+              valueFrom:
+                secretKeyRef:
+                  key: password
+                  name: sqlserver-connection-string            
+          image: ghcr.io/0gis0/tour-of-heroes-dotnet-api/tour-of-heroes-api:6b947c4
+          name: api
+          ports:
+            - containerPort: 5000
+              name: web
