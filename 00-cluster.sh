@@ -158,3 +158,13 @@ kubectl wait --for=condition=Ready pods --all -n istio-system --timeout=600s
 echo "Ready to go!"
 # Access Kiali UI
 # kubectl port-forward svc/kiali 20001:20001 -n istio-system
+
+# Change environment variable of tour-of-heroes-web deployment to use tour-of-heroes-api service
+kubectl set env deployment/tour-of-heroes-web -n tour-of-heroes API_URL="http://$(kubectl get svc tour-of-heroes-api -n tour-of-heroes -o jsonpath='{.status.loadBalancer.ingress[0].ip}')/api/hero"
+kubectl describe deployment tour-of-heroes-web -n tour-of-heroes | grep API_URL
+
+# Load some heroes
+source 000-load-heroes.sh $(kubectl get svc tour-of-heroes-api -n tour-of-heroes -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+
+echo "Access Tour of heroes web: http://$(kubectl get svc tour-of-heroes-web -n tour-of-heroes -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
+echo "Access Tour of heroes API: http://$(kubectl get svc tour-of-heroes-api -n tour-of-heroes -o jsonpath='{.status.loadBalancer.ingress[0].ip}')/api/hero"
