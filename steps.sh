@@ -49,14 +49,65 @@ source 00-cluster.sh "chaos-mesh-demo" "chaos-mesh-k8s"
 source 02-chaos-mesh.sh "chaos-mesh-k8s"
 
 # Port forward to access the dashboard in background
-kubectl port-forward svc/chaos-dashboard -n chaos-mesh 2333:2333 &
+kubectl port-forward svc/chaos-dashboard -n chaos-mesh 2333:2333
+
+# First thing: Generate a token to manage Chaos Mesh
+# Cluster scope and Role > Manager
+kubectl apply -f - <<EOF
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  namespace: default
+  name: account-cluster-manager-vezjg
+
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: role-cluster-manager-vezjg
+rules:
+- apiGroups: [""]
+  resources: ["pods", "namespaces"]
+  verbs: ["get", "watch", "list"]
+- apiGroups: ["chaos-mesh.org"]
+  resources: [ "*" ]
+  verbs: ["get", "list", "watch", "create", "delete", "patch", "update"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: bind-cluster-manager-vezjg
+subjects:
+- kind: ServiceAccount
+  name: account-cluster-manager-vezjg
+  namespace: default
+roleRef:
+  kind: ClusterRole
+  name: role-cluster-manager-vezjg
+  apiGroup: rbac.authorization.k8s.io
+EOF
+
+# Generate token (available from Kubernetes 1.24+)
+kubectl create token account-cluster-manager-vezjg
+
+# Create a experiment
+# 1. Go to Experiments > + New experiment
+# 2. Inject into Kubernetes > Pod Fault > Pod Failure
+# 3. Experiment Info:
+# 3.1. Scope > Namespace Selectors: tour-of-heroes; Label Selectors: app=tour-of-heroes-sql; Mode > All
+# 3.2 Metadata > Name: dbdies; Namespace: chaos-mesh
+
+# 4. Check the pods
+watch kubectl get pods -n tour-of-heroes
+
 
 # Access Kiali dashboard in background
-kubectl port-forward svc/kiali -n istio-system 20001:20001 &
+# kubectl port-forward svc/kiali -n istio-system 20001:20001 &
 
 # Generate load
-hey -c 2 -z 200s http://$(kubectl get svc tour-of-heroes-api -n tour-of-heroes -o jsonpath='{.status.loadBalancer.ingress[0].ip}')/api/hero &
-hey -c 2 -z 200s http://20.73.146.84/heroes &
+# hey -c 2 -z 200s http://$(kubectl get svc tour-of-heroes-api -n tour-of-heroes -o jsonpath='{.status.loadBalancer.ingress[0].ip}')/api/hero &
+# hey -c 2 -z 200s http://20.73.146.84/heroes &
 
 source 05-delete-resources.sh "chaos-mesh-demo" "chaos-mesh-k8s"
 
