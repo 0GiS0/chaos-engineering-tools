@@ -31,7 +31,7 @@ echo "2.4 URL: http://$(kubectl get svc tour-of-heroes-api -n tour-of-heroes -o 
 # 3.4. Keep Tune Fault as it is
 # 3.5 Probes > + Add Probe > Tour of heroes API > Mode: Continuous
 # 3.6. Apply Changes > Apply Changes > Save & Run
-# 3.7 This won't work: I get this error from subscriber pod:
+# 3.7 This won't work (Issue: https://github.com/litmuschaos/litmus/issues/4246): I get this error from subscriber pod:
 # time="2023-11-27T08:46:02Z" level=error msg="Error on processing request" error="error performing infra operation: Workflow.argoproj.io \"dbdies-1701074762792\" is invalid: metadata.labels: Invalid value: \"{{workflow.parameters.appNamespace}}_kube-proxy\": a valid label must be an empty string or consist of alphanumeric characters, '-', '_' or '.', and must start and end with an alphanumeric character (e.g. 'MyValue',  or 'my_value',  or '12345', regex used for validation is '(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?')"
 # 3.8 Download Manifest, commet subject: "{{workflow.parameters.appNamespace}}_kube-proxy" and execute locally
 kubectl apply -f dbdies.yml
@@ -40,7 +40,7 @@ watch kubectl get pods -n litmus
 # 4. Check the pods
 watch kubectl get pods -n tour-of-heroes
 
-#Log out before delete the cluster
+#!IMPORTANT: Log out before delete the cluster
 source 05-delete-resources.sh "litmus-demo" "litmus-k8s"
 ####################################################
 ################### Chaos Mesh #####################
