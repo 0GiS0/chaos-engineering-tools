@@ -13,5 +13,5 @@ helm install gremlin gremlin/gremlin \
     --set  gremlin.secret.teamSecret=943f6b65-6b98-492c-bf6b-656b98192c4e
 
 # watch kubectl get pods -n gremlin
-kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=gremlin -n gremlin --timeout=120s
+kubectl wait --for=condition=Ready pod -l app.kubernetes.io/name=gremlin -n gremlin --timeout=120s
 

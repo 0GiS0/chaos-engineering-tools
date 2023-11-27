@@ -117,18 +117,21 @@ source 05-delete-resources.sh "chaos-mesh-demo" "chaos-mesh-k8s"
 source 00-cluster.sh "gremlin-demo" "gremlin-k8s"
 source 03-gremlin.sh "gremlin-k8s"
 
-# Change environment variable of tour-of-heroes-web deployment to use tour-of-heroes-api service
-kubectl set env deployment/tour-of-heroes-web -n tour-of-heroes API_URL="http://$(kubectl get svc tour-of-heroes-api -n tour-of-heroes -o jsonpath='{.status.loadBalancer.ingress[0].ip}')/api/hero"
-kubectl describe deployment tour-of-heroes-web -n tour-of-heroes | grep API_URL
+# 1. Add a Health check > Custom > Use this URL: http://$(kubectl get svc tour-of-heroes-api -n tour-of-heroes -o jsonpath='{.status.loadBalancer.ingress[0].ip}')/api/hero
+# 1.1 Click on Authenticate observability tool
+# 1.2 Click on Save Authentication
+# 1.3 Add Health Check Name: tour-of-heroes-api-public-url
+# 1.4 In Monitor or Alert URL add the same URL than before
+# 1.5 Click on Test Connection
+# 1.6 Click on Test Evaluation
+# 1.7 Click on Create Health Check
 
-# Load some heroes
-source 000-load-heroes.sh $(kubectl get svc tour-of-heroes-api -n tour-of-heroes -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+# 2. Add a Service using the Gremlin UI and select the tour-of-heroes-sql deployment
+# 2.1 Add health check > tour-of-heroes-api-public-url
 
-echo "Access Tour of heroes web: http://$(kubectl get svc tour-of-heroes-web -n tour-of-heroes -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
-echo "Access Tour of heroes API: http://$(kubectl get svc tour-of-heroes-api -n tour-of-heroes -o jsonpath='{.status.loadBalancer.ingress[0].ip}')/api/hero"
+# 3. Create an experiment
 
-# Create a gremlin experiment
-source checks/00-check-pods.sh
+
 
 source 05-delete-resources.sh "gremlin-demo" "gremlin-k8s"
 ####################################################
