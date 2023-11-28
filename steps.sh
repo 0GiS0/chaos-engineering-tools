@@ -49,47 +49,7 @@ source 00-cluster.sh "chaos-mesh-demo" "chaos-mesh-k8s"
 source 02-chaos-mesh.sh "chaos-mesh-k8s"
 
 # Port forward to access the dashboard in background
-kubectl port-forward svc/chaos-dashboard -n chaos-mesh 2333:2333
-
-# First thing: Generate a token to manage Chaos Mesh
-# Cluster scope and Role > Manager
-kubectl apply -f - <<EOF
-kind: ServiceAccount
-apiVersion: v1
-metadata:
-  namespace: default
-  name: account-cluster-manager-vezjg
-
----
-kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: role-cluster-manager-vezjg
-rules:
-- apiGroups: [""]
-  resources: ["pods", "namespaces"]
-  verbs: ["get", "watch", "list"]
-- apiGroups: ["chaos-mesh.org"]
-  resources: [ "*" ]
-  verbs: ["get", "list", "watch", "create", "delete", "patch", "update"]
-
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: bind-cluster-manager-vezjg
-subjects:
-- kind: ServiceAccount
-  name: account-cluster-manager-vezjg
-  namespace: default
-roleRef:
-  kind: ClusterRole
-  name: role-cluster-manager-vezjg
-  apiGroup: rbac.authorization.k8s.io
-EOF
-
-# Generate token (available from Kubernetes 1.24+)
-kubectl create token account-cluster-manager-vezjg
+kubectl port-forward svc/chaos-dashboard -n chaos-testing 2333:2333
 
 # Create a experiment
 # 1. Go to Experiments > + New experiment
@@ -101,43 +61,116 @@ kubectl create token account-cluster-manager-vezjg
 # 4. Check the pods
 watch kubectl get pods -n tour-of-heroes
 
-
-# Access Kiali dashboard in background
-# kubectl port-forward svc/kiali -n istio-system 20001:20001 &
-
-# Generate load
-# hey -c 2 -z 200s http://$(kubectl get svc tour-of-heroes-api -n tour-of-heroes -o jsonpath='{.status.loadBalancer.ingress[0].ip}')/api/hero &
-# hey -c 2 -z 200s http://20.73.146.84/heroes &
-
 source 05-delete-resources.sh "chaos-mesh-demo" "chaos-mesh-k8s"
 
 ####################################################
-################### Gremlin ########################
+################ Azure Chaos Studio ################
 ####################################################
-source 00-cluster.sh "gremlin-demo" "gremlin-k8s"
-source 03-gremlin.sh "gremlin-k8s"
+AKS_NAME="azchaos-k8s"
+RESOURCE_GROUP="az-chaos-studio-demo"
 
-# 1. Add a Health check > Custom > Use this URL: http://$(kubectl get svc tour-of-heroes-api -n tour-of-heroes -o jsonpath='{.status.loadBalancer.ingress[0].ip}')/api/hero
-# 1.1 Click on Authenticate observability tool
-# 1.2 Click on Save Authentication
-# 1.3 Add Health Check Name: tour-of-heroes-api-public-url
-# 1.4 In Monitor or Alert URL add the same URL than before
-# 1.5 Click on Test Connection
-# 1.6 Click on Test Evaluation
-# 1.7 Click on Create Health Check
+source 00-cluster.sh $RESOURCE_GROUP $AKS_NAME
 
-# 2. Add a Service using the Gremlin UI and select the tour-of-heroes-sql deployment
-# 2.1 Add health check > tour-of-heroes-api-public-url
+# Before you can run Chaos Mesh faults in Chaos Studio, you must install Chaos Mesh on your AKS cluster.
+source 02-chaos-mesh.sh $AKS_NAME
 
-# 3. Create an experiment
+# Port forward to access the dashboard in background
+kubectl port-forward svc/chaos-dashboard -n chaos-testing 2333:2333
 
+# Enable this cluster as a target for Chaos Studio
+AKS_RESOURCE_ID=$(az aks show --resource-group $RESOURCE_GROUP --name $AKS_NAME --query id --output tsv)
+SUBSCRIPTION_ID=$(az account show --query id --output tsv)
+API_VERSION="2023-11-01"
 
+az rest --method put \
+--url "https://management.azure.com/$AKS_RESOURCE_ID/providers/Microsoft.Chaos/targets/Microsoft-AzureKubernetesServiceChaosMesh?api-version=$API_VERSION" \
+--body "{\"properties\":{}}"
 
-source 05-delete-resources.sh "gremlin-demo" "gremlin-k8s"
-####################################################
-################ Azure Chaos Studio#################
-####################################################
-source 00-cluster.sh "az-chaos-studio-demo" "azchaos-k8s"
+# Create the capabilities on the target by replacing $RESOURCE_ID with the resource ID of the AKS cluster you're adding. Replace $CAPABILITY with the name of the fault capability you're enabling.
+CAPABILITY="PodChaos-2.1"
 
-az group delete --name az-chaos-studio-demo --yes --no-wait
+az rest --method put \
+--url "https://management.azure.com/$AKS_RESOURCE_ID/providers/Microsoft.Chaos/targets/Microsoft-AzureKubernetesServiceChaosMesh/capabilities/$CAPABILITY?api-version=$API_VERSION"  \
+--body "{\"properties\":{}}"
 
+# {"selector":{"namespaces":["tour-of-heroes"],"labelSelectors":{"app":"tour-of-heroes-sql"}},"mode":"all","action":"pod-failure","duration":"7m"}
+
+EXPERIMENT_NAME=dbdies-from-cli
+
+cat <<EOF > experiment.json
+{
+  "location": "westeurope",
+  "identity": {
+    "type": "SystemAssigned"
+  },
+  "properties": {
+    "steps": [
+      {
+        "name": "AKS pod kill",
+        "branches": [
+          {
+            "name": "AKS pod kill",
+            "actions": [
+              {
+                "type": "continuous",
+                "selectorId": "Selector1",
+                "duration": "PT7M",
+                "parameters": [
+                  {
+                      "key": "jsonSpec",
+                      "value": "{'selector':{'namespaces':['tour-of-heroes'],'labelSelectors':{'app':'tour-of-heroes-sql'}},'mode':'all','action':'pod-failure'}"
+                  }
+                ],
+                "name": "urn:csci:microsoft:azureKubernetesServiceChaosMesh:podChaos/2.1"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "selectors": [
+      {
+        "id": "Selector1",
+        "type": "List",
+        "targets": [
+          {
+            "type": "ChaosTarget",
+            "id": "/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.ContainerService/managedClusters/$AKS_NAME/providers/Microsoft.Chaos/targets/Microsoft-AzureKubernetesServiceChaosMesh"
+          }
+        ]
+      }
+    ]
+  }
+}
+EOF
+
+az rest \
+--method put \
+--uri "https://management.azure.com/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.Chaos/experiments/$EXPERIMENT_NAME?api-version=$API_VERSION" --body @experiment.json
+
+# Get the principal ID por this experiment
+EXPERIMENT_PRINCIPAL_ID=$(az resource show \
+--resource-group $RESOURCE_GROUP \
+--name $EXPERIMENT_NAME \
+--resource-type Microsoft.Chaos/experiments \
+--query identity.principalId \
+--output tsv)
+
+# Give the experiment permission to your AKS cluster
+az role assignment create \
+--role "Azure Kubernetes Service Cluster Admin Role" \
+--assignee-object-id $EXPERIMENT_PRINCIPAL_ID \
+--scope $AKS_RESOURCE_ID
+
+# Run the experiment
+az rest \
+--method post \
+--uri "https://management.azure.com/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.Chaos/experiments/$EXPERIMENT_NAME/start?api-version=$API_VERSION"
+
+# Port forward to access the dashboard in background
+kubectl port-forward svc/chaos-dashboard -n chaos-testing 2333:2333
+
+#Check the pods
+watch kubectl get pods -n tour-of-heroes
+
+source 05-delete-resources.sh "az-chaos-studio-demo" "azchaos-k8s"

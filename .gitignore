@@ -2,3 +2,4 @@ istio-1.20.0
 
 tour-of-chaos-litmus-chaos-enable.yml
 dbdies.yml
+experiment.json
