@@ -5,8 +5,8 @@ brew install kubectx
 ####################################################
 ################### Litmus #########################
 ####################################################
-source 00-cluster.sh "litmus-demo" "litmus-k8s"
-source 01-litmus.sh "litmus-k8s"
+source 00-create-cluster.sh "litmus-demo" "litmus-k8s"
+source 02-litmus.sh "litmus-k8s"
 
 kubectl port-forward svc/chaos-litmus-frontend-service -n litmus 9091:9091 # admin/litmus
 
@@ -41,12 +41,12 @@ watch kubectl get pods -n litmus
 watch kubectl get pods -n tour-of-heroes
 
 #!IMPORTANT: Log out before delete the cluster
-source 05-delete-resources.sh "litmus-demo" "litmus-k8s"
+source 04-delete-resources.sh "litmus-demo" "litmus-k8s"
 ####################################################
 ################### Chaos Mesh #####################
 ####################################################
-source 00-cluster.sh "chaos-mesh-demo" "chaos-mesh-k8s"
-source 02-chaos-mesh.sh "chaos-mesh-k8s"
+source 00-create-cluster.sh "chaos-mesh-demo" "chaos-mesh-k8s"
+source 03-chaos-mesh.sh "chaos-mesh-k8s"
 
 # Port forward to access the dashboard in background
 kubectl port-forward svc/chaos-dashboard -n chaos-testing 2333:2333
@@ -61,7 +61,7 @@ kubectl port-forward svc/chaos-dashboard -n chaos-testing 2333:2333
 # 4. Check the pods
 watch kubectl get pods -n tour-of-heroes
 
-source 05-delete-resources.sh "chaos-mesh-demo" "chaos-mesh-k8s"
+source 04-delete-resources.sh "chaos-mesh-demo" "chaos-mesh-k8s"
 
 ####################################################
 ################ Azure Chaos Studio ################
@@ -69,10 +69,10 @@ source 05-delete-resources.sh "chaos-mesh-demo" "chaos-mesh-k8s"
 AKS_NAME="azchaos-k8s"
 RESOURCE_GROUP="az-chaos-studio-demo"
 
-source 00-cluster.sh $RESOURCE_GROUP $AKS_NAME
+source 00-create-cluster.sh $RESOURCE_GROUP $AKS_NAME
 
 # Before you can run Chaos Mesh faults in Chaos Studio, you must install Chaos Mesh on your AKS cluster.
-source 02-chaos-mesh.sh $AKS_NAME
+source 03-chaos-mesh.sh $AKS_NAME
 
 # Port forward to access the dashboard in background
 kubectl port-forward svc/chaos-dashboard -n chaos-testing 2333:2333
@@ -173,4 +173,4 @@ kubectl port-forward svc/chaos-dashboard -n chaos-testing 2333:2333
 #Check the pods
 watch kubectl get pods -n tour-of-heroes
 
-source 05-delete-resources.sh "az-chaos-studio-demo" "azchaos-k8s"
+source 04-delete-resources.sh "az-chaos-studio-demo" "azchaos-k8s"

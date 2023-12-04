@@ -56,7 +56,7 @@ kubectl set env deployment/tour-of-heroes-web -n tour-of-heroes API_URL="http://
 kubectl describe deployment tour-of-heroes-web -n tour-of-heroes | grep API_URL
 
 # Load some heroes
-source 000-load-heroes.sh $(kubectl get svc tour-of-heroes-api -n tour-of-heroes -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+source 01-load-heroes.sh $(kubectl get svc tour-of-heroes-api -n tour-of-heroes -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 
 echo "Access Tour of heroes web: http://$(kubectl get svc tour-of-heroes-web -n tour-of-heroes -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
 echo "Access Tour of heroes API: http://$(kubectl get svc tour-of-heroes-api -n tour-of-heroes -o jsonpath='{.status.loadBalancer.ingress[0].ip}')/api/hero"
