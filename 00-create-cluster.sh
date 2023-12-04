@@ -45,10 +45,6 @@ for svc in $(kubectl get svc -n tour-of-heroes -o jsonpath='{range .items[*]}{@.
   done
 done
 
-
-echo "Wait for pods to be ready"
-kubectl wait --for=condition=Ready pods --all -n istio-system --timeout=600s
-
 echo "Ready to go!"
 
 # Change environment variable of tour-of-heroes-web deployment to use tour-of-heroes-api service
