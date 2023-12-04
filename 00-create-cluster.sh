@@ -23,7 +23,6 @@ az aks get-credentials --resource-group $RESOURCE_GROUP --name $AKS_NAME --overw
 echo "Deploying tour of heroes"
 kubectl create ns tour-of-heroes
 
-cd ..
 echo "Deploying tour of heroes"
 kubectl apply -f k8s/manifests --recursive -n tour-of-heroes
 
