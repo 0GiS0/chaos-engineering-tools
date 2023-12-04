@@ -13,7 +13,7 @@ SUBSCRIPTION_ID=$(az account show --query id -o tsv)
 az aks create \
 --resource-group $RESOURCE_GROUP \
 --name $AKS_NAME \
---node-vm-size Standard_B2s \
+--node-vm-size Standard_B4ms \
 --enable-azure-monitor-metrics \
 --generate-ssh-keys
 

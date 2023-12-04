@@ -5,7 +5,7 @@ brew install kubectx
 ####################################################
 ################### Litmus #########################
 ####################################################
-source 00-create-cluster.sh "litmus-demo" "litmus-k8s" 
+source 00-create-cluster.sh "litmus-demo" "litmus-k8s"
 source 02-litmus.sh "litmus-k8s"
 
 kubectl port-forward svc/chaos-litmus-frontend-service -n litmus 9091:9091 # admin/litmus
