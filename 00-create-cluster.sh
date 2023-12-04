@@ -20,10 +20,8 @@ az aks create \
 # Get AKS credentials
 az aks get-credentials --resource-group $RESOURCE_GROUP --name $AKS_NAME --overwrite-existing
 
-
 echo "Deploying tour of heroes"
 kubectl create ns tour-of-heroes
-kubectl label namespace tour-of-heroes istio-injection=enabled
 
 cd ..
 echo "Deploying tour of heroes"
