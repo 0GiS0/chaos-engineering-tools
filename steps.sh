@@ -93,7 +93,7 @@ az rest --method put \
 --url "https://management.azure.com/$AKS_RESOURCE_ID/providers/Microsoft.Chaos/targets/Microsoft-AzureKubernetesServiceChaosMesh/capabilities/$CAPABILITY?api-version=$API_VERSION"  \
 --body "{\"properties\":{}}"
 
-# {"selector":{"namespaces":["tour-of-heroes"],"labelSelectors":{"app":"tour-of-heroes-sql"}},"mode":"all","action":"pod-failure","duration":"7m"}
+# {"selector":{"namespaces":["tour-of-heroes"],"labelSelectors":{"app":"tour-of-heroes-sql"}},"mode":"all","action":"pod-failure"}
 
 EXPERIMENT_NAME=dbdies-from-cli
 
